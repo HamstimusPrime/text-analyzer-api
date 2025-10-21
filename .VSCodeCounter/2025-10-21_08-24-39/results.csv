@@ -1,0 +1,15 @@
+"filename", "language", "MS SQL", "Go", "Go Checksum File", "YAML", "Go Module File", "comment", "blank", "total"
+"/Users/mohammed/workspace/github.com/hamstimusprime/text-analyzer-api/go.mod", "Go Module File", 0, 0, 0, 0, 6, 0, 3, 9
+"/Users/mohammed/workspace/github.com/hamstimusprime/text-analyzer-api/go.sum", "Go Checksum File", 0, 0, 4, 0, 0, 0, 1, 5
+"/Users/mohammed/workspace/github.com/hamstimusprime/text-analyzer-api/internal/database/db.go", "Go", 0, 22, 0, 0, 0, 3, 7, 32
+"/Users/mohammed/workspace/github.com/hamstimusprime/text-analyzer-api/internal/database/models.go", "Go", 0, 20, 0, 0, 0, 3, 6, 29
+"/Users/mohammed/workspace/github.com/hamstimusprime/text-analyzer-api/internal/database/texts.sql.go", "Go", 0, 72, 0, 0, 0, 4, 12, 88
+"/Users/mohammed/workspace/github.com/hamstimusprime/text-analyzer-api/main.go", "Go", 0, 29, 0, 0, 0, 4, 9, 42
+"/Users/mohammed/workspace/github.com/hamstimusprime/text-analyzer-api/models.go", "Go", 0, 39, 0, 0, 0, 1, 12, 52
+"/Users/mohammed/workspace/github.com/hamstimusprime/text-analyzer-api/sql/001_texts.sql", "MS SQL", 10, 0, 0, 0, 0, 2, 2, 14
+"/Users/mohammed/workspace/github.com/hamstimusprime/text-analyzer-api/sql/queries/texts.sql", "MS SQL", 21, 0, 0, 0, 0, 3, 6, 30
+"/Users/mohammed/workspace/github.com/hamstimusprime/text-analyzer-api/sql/schema/001_texts.sql", "MS SQL", 10, 0, 0, 0, 0, 2, 2, 14
+"/Users/mohammed/workspace/github.com/hamstimusprime/text-analyzer-api/sql/schema/002_character_count.sql", "MS SQL", 11, 0, 0, 0, 0, 2, 1, 14
+"/Users/mohammed/workspace/github.com/hamstimusprime/text-analyzer-api/sqlc.yaml", "YAML", 0, 0, 0, 8, 0, 0, 0, 8
+"/Users/mohammed/workspace/github.com/hamstimusprime/text-analyzer-api/utils.go", "Go", 0, 83, 0, 0, 0, 1, 12, 96
+"Total", "-", 52, 265, 4, 8, 6, 25, 73, 433

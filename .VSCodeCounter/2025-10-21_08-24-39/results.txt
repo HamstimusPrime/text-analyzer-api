@@ -1,0 +1,48 @@
+Date : 2025-10-21 08:24:39
+Directory : /Users/mohammed/workspace/github.com/hamstimusprime/text-analyzer-api
+Total : 13 files,  335 codes, 25 comments, 73 blanks, all 433 lines
+
+Languages
++------------------+------------+------------+------------+------------+------------+
+| language         | files      | code       | comment    | blank      | total      |
++------------------+------------+------------+------------+------------+------------+
+| Go               |          6 |        265 |         16 |         58 |        339 |
+| MS SQL           |          4 |         52 |          9 |         11 |         72 |
+| YAML             |          1 |          8 |          0 |          0 |          8 |
+| Go Module File   |          1 |          6 |          0 |          3 |          9 |
+| Go Checksum File |          1 |          4 |          0 |          1 |          5 |
++------------------+------------+------------+------------+------------+------------+
+
+Directories
++----------------------------------------------------------------------------------------------------------+------------+------------+------------+------------+------------+
+| path                                                                                                     | files      | code       | comment    | blank      | total      |
++----------------------------------------------------------------------------------------------------------+------------+------------+------------+------------+------------+
+| .                                                                                                        |         13 |        335 |         25 |         73 |        433 |
+| . (Files)                                                                                                |          6 |        169 |          6 |         37 |        212 |
+| internal                                                                                                 |          3 |        114 |         10 |         25 |        149 |
+| internal/database                                                                                        |          3 |        114 |         10 |         25 |        149 |
+| sql                                                                                                      |          4 |         52 |          9 |         11 |         72 |
+| sql (Files)                                                                                              |          1 |         10 |          2 |          2 |         14 |
+| sql/queries                                                                                              |          1 |         21 |          3 |          6 |         30 |
+| sql/schema                                                                                               |          2 |         21 |          4 |          3 |         28 |
++----------------------------------------------------------------------------------------------------------+------------+------------+------------+------------+------------+
+
+Files
++----------------------------------------------------------------------------------------------------------+------------------+------------+------------+------------+------------+
+| filename                                                                                                 | language         | code       | comment    | blank      | total      |
++----------------------------------------------------------------------------------------------------------+------------------+------------+------------+------------+------------+
+| /Users/mohammed/workspace/github.com/hamstimusprime/text-analyzer-api/go.mod                             | Go Module File   |          6 |          0 |          3 |          9 |
+| /Users/mohammed/workspace/github.com/hamstimusprime/text-analyzer-api/go.sum                             | Go Checksum File |          4 |          0 |          1 |          5 |
+| /Users/mohammed/workspace/github.com/hamstimusprime/text-analyzer-api/internal/database/db.go            | Go               |         22 |          3 |          7 |         32 |
+| /Users/mohammed/workspace/github.com/hamstimusprime/text-analyzer-api/internal/database/models.go        | Go               |         20 |          3 |          6 |         29 |
+| /Users/mohammed/workspace/github.com/hamstimusprime/text-analyzer-api/internal/database/texts.sql.go     | Go               |         72 |          4 |         12 |         88 |
+| /Users/mohammed/workspace/github.com/hamstimusprime/text-analyzer-api/main.go                            | Go               |         29 |          4 |          9 |         42 |
+| /Users/mohammed/workspace/github.com/hamstimusprime/text-analyzer-api/models.go                          | Go               |         39 |          1 |         12 |         52 |
+| /Users/mohammed/workspace/github.com/hamstimusprime/text-analyzer-api/sql/001_texts.sql                  | MS SQL           |         10 |          2 |          2 |         14 |
+| /Users/mohammed/workspace/github.com/hamstimusprime/text-analyzer-api/sql/queries/texts.sql              | MS SQL           |         21 |          3 |          6 |         30 |
+| /Users/mohammed/workspace/github.com/hamstimusprime/text-analyzer-api/sql/schema/001_texts.sql           | MS SQL           |         10 |          2 |          2 |         14 |
+| /Users/mohammed/workspace/github.com/hamstimusprime/text-analyzer-api/sql/schema/002_character_count.sql | MS SQL           |         11 |          2 |          1 |         14 |
+| /Users/mohammed/workspace/github.com/hamstimusprime/text-analyzer-api/sqlc.yaml                          | YAML             |          8 |          0 |          0 |          8 |
+| /Users/mohammed/workspace/github.com/hamstimusprime/text-analyzer-api/utils.go                           | Go               |         83 |          1 |         12 |         96 |
+| Total                                                                                                    |                  |        335 |         25 |         73 |        433 |
++----------------------------------------------------------------------------------------------------------+------------------+------------+------------+------------+------------+
