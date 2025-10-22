@@ -7,6 +7,7 @@ package database
 
 import (
 	"context"
+	"database/sql"
 
 	"github.com/google/uuid"
 )
@@ -69,11 +70,21 @@ func (q *Queries) CreateText(ctx context.Context, arg CreateTextParams) (uuid.UU
 
 const deleteText = `-- name: DeleteText :exec
 DELETE FROM texts
+WHERE value = $1
+`
+
+func (q *Queries) DeleteText(ctx context.Context, value string) error {
+	_, err := q.db.ExecContext(ctx, deleteText, value)
+	return err
+}
+
+const deleteTextWithID = `-- name: DeleteTextWithID :exec
+DELETE FROM texts
 WHERE id = $1
 `
 
-func (q *Queries) DeleteText(ctx context.Context, id uuid.UUID) error {
-	_, err := q.db.ExecContext(ctx, deleteText, id)
+func (q *Queries) DeleteTextWithID(ctx context.Context, id uuid.UUID) error {
+	_, err := q.db.ExecContext(ctx, deleteTextWithID, id)
 	return err
 }
 
@@ -99,6 +110,70 @@ func (q *Queries) GetCharacterCountsByID(ctx context.Context, stringID uuid.UUID
 	for rows.Next() {
 		var i GetCharacterCountsByIDRow
 		if err := rows.Scan(&i.Character, &i.UniqueCharCount); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getFilteredTexts = `-- name: GetFilteredTexts :many
+SELECT DISTINCT
+    t.id,
+    t.value,
+    t.length,
+    t.is_palindrome,
+    t.word_count,
+    t.sha256_hash,
+    t.created_at
+FROM texts t
+WHERE 
+    t.is_palindrome = $1 AND
+    t.length >= $2 AND
+    t.length <= $3 AND
+    t.word_count = $4 AND
+    t.value LIKE '%' || $5 || '%'
+ORDER BY t.created_at DESC
+`
+
+type GetFilteredTextsParams struct {
+	IsPalindrome      bool
+	MinLength         int32
+	MaxLength         int32
+	WordCount         int32
+	ContainsCharacter sql.NullString
+}
+
+func (q *Queries) GetFilteredTexts(ctx context.Context, arg GetFilteredTextsParams) ([]Text, error) {
+	rows, err := q.db.QueryContext(ctx, getFilteredTexts,
+		arg.IsPalindrome,
+		arg.MinLength,
+		arg.MaxLength,
+		arg.WordCount,
+		arg.ContainsCharacter,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Text
+	for rows.Next() {
+		var i Text
+		if err := rows.Scan(
+			&i.ID,
+			&i.Value,
+			&i.Length,
+			&i.IsPalindrome,
+			&i.WordCount,
+			&i.Sha256Hash,
+			&i.CreatedAt,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

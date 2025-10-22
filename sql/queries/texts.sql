@@ -34,9 +34,35 @@ FROM texts
 JOIN character_count ON $1 = character_count.string_id
 ORDER BY character;
 
+
+-- name: GetFilteredTexts :many
+SELECT DISTINCT
+    t.id,
+    t.value,
+    t.length,
+    t.is_palindrome,
+    t.word_count,
+    t.sha256_hash,
+    t.created_at
+FROM texts t
+WHERE 
+    t.is_palindrome = @is_palindrome AND
+    t.length >= @min_length AND
+    t.length <= @max_length AND
+    t.word_count = @word_count AND
+    t.value LIKE '%' || @contains_character || '%'
+ORDER BY t.created_at DESC;
+
+
 -- name: DeleteText :exec
 DELETE FROM texts
+WHERE value = $1;
+
+-- name: DeleteTextWithID :exec
+DELETE FROM texts
 WHERE id = $1;
+
+
 
 
 

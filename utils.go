@@ -83,7 +83,7 @@ func validateString(reqBody RequestBody, cfg *apiConfig) (int, string, error) {
 	}
 
 	if text.Value != "" {
-		errMsg := fmt.Sprintf("String already exists in the DB")
+		errMsg := fmt.Sprintf("String already exists in the system")
 		return 409, errMsg, errors.New("String in DB")
 	}
 
@@ -121,3 +121,4 @@ func countUniqueChars(s string) map[rune]int32 {
 
 	return counts
 }
+

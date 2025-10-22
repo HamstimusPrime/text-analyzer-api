@@ -20,6 +20,13 @@ func main() {
 	if err != nil {
 		log.Fatal("Error loading .env file")
 	}
+
+	filters := []string{"is_palindrome", "min_length", "max_length", "word_count","contains_character"}
+	stringFilters := make(map[string]string) // or map[string]int, etc.
+	for _, filter := range filters {
+		stringFilters[filter] = "" // empty string value
+	}
+
 	//establish DB connection
 	dbURL := os.Getenv("DB_URL")
 	db, err := sql.Open("postgres", dbURL)
@@ -30,12 +37,15 @@ func main() {
 	dbQueries := database.New(db)
 	apiConfiguration := apiConfig{
 		DB: dbQueries,
+		QueryFilters: stringFilters,
 	}
 
 	//server setup
 	port := os.Getenv("PORT")
 	mux := http.NewServeMux()
 	mux.HandleFunc("POST /strings", apiConfiguration.CreateText)
+	mux.HandleFunc("GET /strings/{string_value}", apiConfiguration.GetText)
+	mux.HandleFunc("GET /strings", apiConfiguration.GetFilteredTexts)
 
 	server := &http.Server{
 		Addr:    ":" + port,

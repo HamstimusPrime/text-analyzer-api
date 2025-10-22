@@ -1,0 +1,12 @@
+"filename", "language", "Go Module File", "Go", "MS SQL", "Go Checksum File", "comment", "blank", "total"
+"/Users/mohammed/workspace/github.com/hamstimusprime/text-analyzer-api/go.mod", "Go Module File", 1, 0, 0, 0, 0, 0, 1
+"/Users/mohammed/workspace/github.com/hamstimusprime/text-analyzer-api/go.sum", "Go Checksum File", 0, 0, 0, 2, 0, 0, 2
+"/Users/mohammed/workspace/github.com/hamstimusprime/text-analyzer-api/internal/database/texts.sql.go", "Go", 0, 129, 0, 0, 0, 12, 141
+"/Users/mohammed/workspace/github.com/hamstimusprime/text-analyzer-api/main.go", "Go", 0, 13, 0, 0, 0, 3, 16
+"/Users/mohammed/workspace/github.com/hamstimusprime/text-analyzer-api/models.go", "Go", 0, 223, 0, 0, 29, 22, 274
+"/Users/mohammed/workspace/github.com/hamstimusprime/text-analyzer-api/sql/001_texts.sql", "MS SQL", 0, 0, -10, 0, -2, -2, -14
+"/Users/mohammed/workspace/github.com/hamstimusprime/text-analyzer-api/sql/queries/texts.sql", "MS SQL", 0, 0, 25, 0, 5, 10, 40
+"/Users/mohammed/workspace/github.com/hamstimusprime/text-analyzer-api/sql/schema/002_character_count.sql", "MS SQL", 0, 0, 1, 0, 0, 0, 1
+"/Users/mohammed/workspace/github.com/hamstimusprime/text-analyzer-api/sql/schema/003_fix_character_unique.sql", "MS SQL", 0, 0, 0, 0, 0, 1, 1
+"/Users/mohammed/workspace/github.com/hamstimusprime/text-analyzer-api/utils.go", "Go", 0, 19, 0, 0, 1, 9, 29
+"Total", "-", 1, 384, 16, 2, 33, 55, 491
