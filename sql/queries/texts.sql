@@ -12,7 +12,7 @@ VALUES (
 RETURNING id;
 
 -- name: CreateCharCount :exec
-INSERT INTO character_count (id, string_id, character, char_count)
+INSERT INTO character_count (id, string_id, character, unique_char_count)
 VALUES (
     gen_random_uuid(),
     $1,
@@ -21,8 +21,18 @@ VALUES (
 );
 
 -- name: GetText :one
-SELECT value 
+SELECT id, value, length, is_palindrome, word_count, sha256_hash, created_at 
 FROM texts WHERE value = $1;
+
+-- name: GetTextByID :one
+SELECT id, value, length, is_palindrome, word_count, sha256_hash, created_at 
+FROM texts WHERE id = $1;
+
+-- name: GetCharacterCountsByID :many
+SELECT character, unique_char_count
+FROM texts
+JOIN character_count ON $1 = character_count.string_id
+ORDER BY character;
 
 -- name: DeleteText :exec
 DELETE FROM texts

@@ -31,12 +31,12 @@ type SuccessResponseBody struct {
 	ID         uuid.UUID `json:"id"`
 	Value      string    `json:"value"`
 	Properties struct {
-		Length                int32    `json:"length"`
-		IsPalindrome          string   `json:"is_palindrome"`
-		UniqueCharacters      string   `json:"unique_characters"`
-		WordCount             string   `json:"word_count"`
-		Sha256Hash            string   `json:"sha256_hash"`
-		CharacterFrequencyMap []string `json:"character_frequency_map"`
+		Length                int32          `json:"length"`
+		IsPalindrome          string         `json:"is_palindrome"`
+		UniqueCharacters      string         `json:"unique_characters"`
+		WordCount             string         `json:"word_count"`
+		Sha256Hash            string         `json:"sha256_hash"`
+		CharacterFrequencyMap map[string]int `json:"character_frequency_map"`
 	} `json:"properties"`
 	CreatedAt time.Time `json:"created_at"`
 }
@@ -57,7 +57,7 @@ func (cfg *apiConfig) CreateText(w http.ResponseWriter, r *http.Request) {
 		respondWithError(w, errMsg, errorCode)
 		return
 	}
-	//setup inputs for text rows
+	//setup inputs for Text-string rows
 	createTextParams := database.CreateTextParams{
 		Value:        reqBody.Value,
 		Length:       charCount(reqBody.Value),
@@ -65,7 +65,7 @@ func (cfg *apiConfig) CreateText(w http.ResponseWriter, r *http.Request) {
 		WordCount:    wordCount(reqBody.Value),
 		Sha256Hash:   generateHash(reqBody.Value),
 	}
-	//on creation of new Text string, return ID of created string
+	//on creation of new Text-string, return ID of created string
 	stringID, err := cfg.DB.CreateText(context.Background(), createTextParams)
 	if err != nil {
 		fmt.Printf("error: %v", err)
@@ -109,10 +109,9 @@ func (cfg *apiConfig) CreateText(w http.ResponseWriter, r *http.Request) {
 	}
 
 	//create character frequency map
-	var characterFrequencyMap []string
+	characterFrequencyMap := make(map[string]int)
 	for _, charCount := range charCounts {
-		frequencyEntry := fmt.Sprintf("%s:%d", charCount.Character, charCount.UniqueCharCount)
-		characterFrequencyMap = append(characterFrequencyMap, frequencyEntry)
+		characterFrequencyMap[charCount.Character] = int(charCount.UniqueCharCount)
 	}
 
 	//create response body with the parsed data
@@ -120,12 +119,12 @@ func (cfg *apiConfig) CreateText(w http.ResponseWriter, r *http.Request) {
 		ID:    textInfo.ID,
 		Value: textInfo.Value,
 		Properties: struct {
-			Length                int32    `json:"length"`
-			IsPalindrome          string   `json:"is_palindrome"`
-			UniqueCharacters      string   `json:"unique_characters"`
-			WordCount             string   `json:"word_count"`
-			Sha256Hash            string   `json:"sha256_hash"`
-			CharacterFrequencyMap []string `json:"character_frequency_map"`
+			Length                int32          `json:"length"`
+			IsPalindrome          string         `json:"is_palindrome"`
+			UniqueCharacters      string         `json:"unique_characters"`
+			WordCount             string         `json:"word_count"`
+			Sha256Hash            string         `json:"sha256_hash"`
+			CharacterFrequencyMap map[string]int `json:"character_frequency_map"`
 		}{
 			Length:                textInfo.Length,
 			IsPalindrome:          fmt.Sprintf("%t", textInfo.IsPalindrome),
@@ -138,6 +137,7 @@ func (cfg *apiConfig) CreateText(w http.ResponseWriter, r *http.Request) {
 	}
 
 	//return JSON response
+	fmt.Println("text created!!")
 	respondWithJSON(w, responseBody, 200)
 
 }

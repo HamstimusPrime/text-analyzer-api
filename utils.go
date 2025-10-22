@@ -76,7 +76,7 @@ func validateString(reqBody RequestBody, cfg *apiConfig) (int, string, error) {
 
 		} else {
 			fmt.Println("Text NOT created!!")
-			errMsg := fmt.Sprintf("unable to create string. Internal server Error\n")
+			errMsg := fmt.Sprintf("unable to create string. Internal server Error: %v\n", err)
 			return 500, errMsg, err
 		}
 
