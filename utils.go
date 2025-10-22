@@ -97,6 +97,7 @@ func generateHash(str string) string {
 	return fmt.Sprintf("%x", h.Sum(nil))
 }
 
+// used to count characters in string excluding white space
 func charCount(str string) int32 {
 	count := 0
 	for _, r := range str {
@@ -112,13 +113,28 @@ func wordCount(str string) int32 {
 	return int32(len(words))
 }
 
-func countUniqueChars(s string) map[rune]int32 {
-	counts := make(map[rune]int32)
+func getUniqueChars(s string) map[rune]int32 {
+	uniqueCharMap := make(map[rune]int32)
 
 	for _, char := range s {
-		counts[char]++
+		uniqueCharMap[char]++
 	}
 
-	return counts
+	return uniqueCharMap
 }
 
+func countUniqueChars(s string) int32 {
+	characters := make(map[rune]int32)
+
+	for _, char := range s {
+		characters[char]++
+	}
+
+	return int32(len(characters))
+}
+
+// func validateQueryParams(r *http.Request) {
+// 	//returns a map where keys are made up of filte
+// 	// Parse query parameters
+// 	queryParams := r.URL.Query()
+// }

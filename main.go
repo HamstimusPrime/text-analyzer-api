@@ -21,10 +21,11 @@ func main() {
 		log.Fatal("Error loading .env file")
 	}
 
-	filters := []string{"is_palindrome", "min_length", "max_length", "word_count","contains_character"}
-	stringFilters := make(map[string]string) // or map[string]int, etc.
+	//setup Maps of accepted queries
+	filters := []string{"is_palindrome", "min_length", "max_length", "word_count", "contains_character"}
+	stringFilters := make(map[string]string)
 	for _, filter := range filters {
-		stringFilters[filter] = "" // empty string value
+		stringFilters[filter] = ""
 	}
 
 	//establish DB connection
@@ -34,18 +35,21 @@ func main() {
 		log.Fatalf("unable to establish connection to database: %v", err)
 	}
 
+	//setup state for API
 	dbQueries := database.New(db)
 	apiConfiguration := apiConfig{
-		DB: dbQueries,
+		DB:           dbQueries,
 		QueryFilters: stringFilters,
 	}
 
 	//server setup
 	port := os.Getenv("PORT")
 	mux := http.NewServeMux()
-	mux.HandleFunc("POST /strings", apiConfiguration.CreateText)
 	mux.HandleFunc("GET /strings/{string_value}", apiConfiguration.GetText)
 	mux.HandleFunc("GET /strings", apiConfiguration.GetFilteredTexts)
+	// mux.HandleFunc("POST /strings/filter-by-natural-language", apiConfiguration.GetTexByNaturalLang)
+	mux.HandleFunc("POST /strings", apiConfiguration.CreateText)
+	mux.HandleFunc("DELETE /strings/{string_value}", apiConfiguration.DeleteText)
 
 	server := &http.Server{
 		Addr:    ":" + port,

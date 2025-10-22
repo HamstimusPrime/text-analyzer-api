@@ -28,6 +28,11 @@ type FilteredTextsResponse struct {
 		ID         string `json:"id"`
 		Value      string `json:"value"`
 		Properties struct {
+			Length                int32          `json:"length"`
+			IsPalindrome          string         `json:"is_palindrome"`
+			WordCount             string         `json:"word_count"`
+			Sha256Hash            string         `json:"sha256_hash"`
+			CharacterFrequencyMap map[string]int `json:"character_frequency_map"`
 		} `json:"properties"`
 		CreatedAt time.Time `json:"created_at"`
 	} `json:"data"`
@@ -53,6 +58,16 @@ type SuccessResponseBody struct {
 		CharacterFrequencyMap map[string]int `json:"character_frequency_map"`
 	} `json:"properties"`
 	CreatedAt time.Time `json:"created_at"`
+}
+
+// NLPFilters represents the parsed natural language query
+type NLPFilters struct {
+	IsPalindrome      *bool   `json:"is_palindrome,omitempty"`
+	MinLength         *int    `json:"min_length,omitempty"`
+	MaxLength         *int    `json:"max_length,omitempty"`
+	WordCount         *int    `json:"word_count,omitempty"`
+	ContainsCharacter *string `json:"contains_character,omitempty"`
+	ContainsText      *string `json:"contains_text,omitempty"`
 }
 
 func (cfg *apiConfig) CreateText(w http.ResponseWriter, r *http.Request) {
@@ -89,7 +104,7 @@ func (cfg *apiConfig) CreateText(w http.ResponseWriter, r *http.Request) {
 	}
 
 	//setup inputs for character count rows
-	uniqueChars := countUniqueChars(reqBody.Value)
+	uniqueChars := getUniqueChars(reqBody.Value)
 	for character, charCount := range uniqueChars {
 		createCharCountParams := database.CreateCharCountParams{
 			StringID:        stringID, //use ID of created string as string ID for each character
@@ -142,7 +157,7 @@ func (cfg *apiConfig) CreateText(w http.ResponseWriter, r *http.Request) {
 		}{
 			Length:                textInfo.Length,
 			IsPalindrome:          fmt.Sprintf("%t", textInfo.IsPalindrome),
-			UniqueCharacters:      fmt.Sprintf("%d", len(charCounts)),
+			UniqueCharacters:      fmt.Sprintf("%d", len(characterFrequencyMap)),
 			WordCount:             fmt.Sprintf("%d", textInfo.WordCount),
 			Sha256Hash:            textInfo.Sha256Hash,
 			CharacterFrequencyMap: characterFrequencyMap,
@@ -206,7 +221,7 @@ func (cfg *apiConfig) GetText(w http.ResponseWriter, r *http.Request) {
 		}{
 			Length:                textInfo.Length,
 			IsPalindrome:          fmt.Sprintf("%t", textInfo.IsPalindrome),
-			UniqueCharacters:      fmt.Sprintf("%d", len(charCounts)),
+			UniqueCharacters:      fmt.Sprintf("%d", len(characterFrequencyMap)),
 			WordCount:             fmt.Sprintf("%d", textInfo.WordCount),
 			Sha256Hash:            textInfo.Sha256Hash,
 			CharacterFrequencyMap: characterFrequencyMap,
@@ -241,9 +256,6 @@ func (cfg *apiConfig) GetFilteredTexts(w http.ResponseWriter, r *http.Request) {
 		WordCount:         0,      // Will need logic to handle optional int
 		ContainsCharacter: sql.NullString{Valid: false},
 	}
-
-	// Flags to track which optional parameters were actually provided
-	// var isPalindromeProvided, wordCountProvided bool
 
 	// Parse and validate each query parameter
 	for key, values := range clientQueryFilters {
@@ -334,10 +346,16 @@ func (cfg *apiConfig) GetFilteredTexts(w http.ResponseWriter, r *http.Request) {
 	// Parse texts into FilteredTextsResponse struct
 	response := FilteredTextsResponse{
 		Data: make([]struct {
-			ID         string    `json:"id"`
-			Value      string    `json:"value"`
-			Properties struct{}  `json:"properties"`
-			CreatedAt  time.Time `json:"created_at"`
+			ID         string `json:"id"`
+			Value      string `json:"value"`
+			Properties struct {
+				Length                int32          `json:"length"`
+				IsPalindrome          string         `json:"is_palindrome"`
+				WordCount             string         `json:"word_count"`
+				Sha256Hash            string         `json:"sha256_hash"`
+				CharacterFrequencyMap map[string]int `json:"character_frequency_map"`
+			} `json:"properties"`
+			CreatedAt time.Time `json:"created_at"`
 		}, len(texts)),
 		Count: len(texts),
 		FiltersApplied: struct {
@@ -356,10 +374,346 @@ func (cfg *apiConfig) GetFilteredTexts(w http.ResponseWriter, r *http.Request) {
 	}
 
 	for i, text := range texts {
+		// Get character counts for each text to build frequency map
+		charCounts, err := cfg.DB.GetCharacterCountsByID(context.Background(), text.ID)
+		if err != nil {
+			fmt.Printf("error getting character counts for text %s: %v", text.ID.String(), err)
+			// Continue with empty character frequency map rather than failing completely
+			charCounts = []database.GetCharacterCountsByIDRow{}
+		}
+
+		// Create character frequency map
+		characterFrequencyMap := make(map[string]int)
+		for _, charCount := range charCounts {
+			characterFrequencyMap[charCount.Character] = int(charCount.UniqueCharCount)
+		}
+
 		response.Data[i].ID = text.ID.String()
 		response.Data[i].Value = text.Value
 		response.Data[i].CreatedAt = text.CreatedAt
+		response.Data[i].Properties.Length = text.Length
+		response.Data[i].Properties.IsPalindrome = fmt.Sprintf("%t", text.IsPalindrome)
+		response.Data[i].Properties.WordCount = fmt.Sprintf("%d", text.WordCount)
+		response.Data[i].Properties.Sha256Hash = text.Sha256Hash
+		response.Data[i].Properties.CharacterFrequencyMap = characterFrequencyMap
 	}
 
 	respondWithJSON(w, response, http.StatusOK)
 }
+
+func (cfg *apiConfig) DeleteText(w http.ResponseWriter, r *http.Request) {
+	stringValue := r.PathValue("string_value")
+	if stringValue == "" {
+		errMsg := "String does not exist in the system"
+		respondWithError(w, errMsg, http.StatusBadRequest)
+		return
+	}
+
+	// Get text information by value to get the ID
+	textInfo, err := cfg.DB.GetText(context.Background(), stringValue)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			errMsg := "String does not exist in the system"
+			respondWithError(w, errMsg, http.StatusNotFound)
+			return
+		}
+		fmt.Printf("error: %v", err)
+		errMsg := "unable to get text info from DB"
+		respondWithError(w, errMsg, http.StatusInternalServerError)
+		return
+	}
+
+	// Delete the text by ID
+	err = cfg.DB.DeleteTextWithID(context.Background(), textInfo.ID)
+	if err != nil {
+		fmt.Printf("error deleting text: %v", err)
+		errMsg := "unable to delete text from DB"
+		respondWithError(w, errMsg, http.StatusInternalServerError)
+		return
+	}
+
+	// Return success response with 204 No Content
+	w.WriteHeader(http.StatusNoContent)
+}
+
+// func (cfg *apiConfig) GetTexByNaturalLang(w http.ResponseWriter, r *http.Request) {
+// 	// Get the natural language query from request body
+// 	var reqBody struct {
+// 		Query string `json:"query"`
+// 	}
+
+// 	if err := json.NewDecoder(r.Body).Decode(&reqBody); err != nil {
+// 		respondWithError(w, "Invalid JSON", http.StatusBadRequest)
+// 		return
+// 	}
+
+// 	// Parse natural language query into database filters
+// 	filters, err := parseNaturalLanguageQuery(reqBody.Query)
+// 	if err != nil {
+// 		respondWithError(w, fmt.Sprintf("Could not understand query: %s", err.Error()), http.StatusBadRequest)
+// 		return
+// 	}
+
+// 	// Build and execute database query based on parsed filters
+// 	texts, err := cfg.executeFilteredQuery(r.Context(), filters)
+// 	if err != nil {
+// 		respondWithError(w, "Database query failed", http.StatusInternalServerError)
+// 		return
+// 	}
+
+// 	// Format and return response
+// 	response := FilteredTextsResponse{
+// 		Data:           texts,
+// 		Count:          len(texts),
+// 		FiltersApplied: convertNLPFiltersToResponse(filters),
+// 	}
+
+// 	respondWithJSON(w, response, http.StatusOK)
+// }
+
+// parseNaturalLanguageQuery converts natural language to database filters
+// func parseNaturalLanguageQuery(query string) (NLPFilters, error) {
+// 	query = strings.ToLower(strings.TrimSpace(query))
+// 	filters := NLPFilters{}
+
+// 	// Pattern matching for different query types
+
+// 	// Palindrome detection
+// 	if strings.Contains(query, "palindrome") {
+// 		isPalindrome := true
+// 		if strings.Contains(query, "not") || strings.Contains(query, "non") {
+// 			isPalindrome = false
+// 		}
+// 		filters.IsPalindrome = &isPalindrome
+// 	}
+
+// 	// Length filters
+// 	lengthPattern := regexp.MustCompile(`(?:length|characters?|chars?)\s*(?:(?:is\s*)?(?:greater\s+than|more\s+than|over|>)\s*(\d+)|(?:is\s*)?(?:less\s+than|fewer\s+than|under|<)\s*(\d+)|(?:is\s*)?(?:exactly\s*)?(\d+))`)
+// 	matches := lengthPattern.FindAllStringSubmatch(query, -1)
+// 	for _, match := range matches {
+// 		if match[1] != "" { // greater than
+// 			if val, err := strconv.Atoi(match[1]); err == nil {
+// 				filters.MinLength = &val
+// 			}
+// 		} else if match[2] != "" { // less than
+// 			if val, err := strconv.Atoi(match[2]); err == nil {
+// 				filters.MaxLength = &val
+// 			}
+// 		} else if match[3] != "" { // exactly
+// 			if val, err := strconv.Atoi(match[3]); err == nil {
+// 				filters.MinLength = &val
+// 				filters.MaxLength = &val
+// 			}
+// 		}
+// 	}
+
+// 	// Word count filters
+// 	wordPattern := regexp.MustCompile(`(?:words?|word count)\s*(?:(?:is\s*)?(?:greater\s+than|more\s+than|over|>)\s*(\d+)|(?:is\s*)?(?:less\s+than|fewer\s+than|under|<)\s*(\d+)|(?:is\s*)?(?:exactly\s*)?(\d+))`)
+// 	wordMatches := wordPattern.FindAllStringSubmatch(query, -1)
+// 	for _, match := range wordMatches {
+// 		if match[1] != "" || match[2] != "" || match[3] != "" {
+// 			// For simplicity, use exact word count matching
+// 			if val, err := strconv.Atoi(match[3]); err == nil {
+// 				filters.WordCount = &val
+// 			}
+// 		}
+// 	}
+
+// 	// Contains character
+// 	charPattern := regexp.MustCompile(`contains?\s+(?:the\s+)?(?:character|char|letter)\s+['"]?([a-zA-Z])['"]?`)
+// 	if charMatch := charPattern.FindStringSubmatch(query); len(charMatch) > 1 {
+// 		filters.ContainsCharacter = &charMatch[1]
+// 	}
+
+// 	// Contains text/substring
+// 	textPattern := regexp.MustCompile(`contains?\s+['"]([^'"]+)['"]`)
+// 	if textMatch := textPattern.FindStringSubmatch(query); len(textMatch) > 1 {
+// 		filters.ContainsText = &textMatch[1]
+// 	}
+
+// 	// If no patterns matched, return an error
+// 	if filters.IsPalindrome == nil && filters.MinLength == nil &&
+// 		filters.MaxLength == nil && filters.WordCount == nil &&
+// 		filters.ContainsCharacter == nil && filters.ContainsText == nil {
+// 		return filters, fmt.Errorf("could not parse query: '%s'. Try queries like 'palindromes', 'length > 10', 'contains character a', etc.", query)
+// 	}
+
+// 	return filters, nil
+// }
+
+// // the convertNLPFiltersToResponse function converts NLPFilters to the expected response format
+// func convertNLPFiltersToResponse(filters NLPFilters) struct {
+// 	IsPalindrome      bool   `json:"is_palindrome"`
+// 	MinLength         int    `json:"min_length"`
+// 	MaxLength         int    `json:"max_length"`
+// 	WordCount         int    `json:"word_count"`
+// 	ContainsCharacter string `json:"contains_character"`
+// } {
+// 	response := struct {
+// 		IsPalindrome      bool   `json:"is_palindrome"`
+// 		MinLength         int    `json:"min_length"`
+// 		MaxLength         int    `json:"max_length"`
+// 		WordCount         int    `json:"word_count"`
+// 		ContainsCharacter string `json:"contains_character"`
+// 	}{}
+
+// 	if filters.IsPalindrome != nil {
+// 		response.IsPalindrome = *filters.IsPalindrome
+// 	}
+// 	if filters.MinLength != nil {
+// 		response.MinLength = *filters.MinLength
+// 	}
+// 	if filters.MaxLength != nil {
+// 		response.MaxLength = *filters.MaxLength
+// 	}
+// 	if filters.WordCount != nil {
+// 		response.WordCount = *filters.WordCount
+// 	}
+// 	if filters.ContainsCharacter != nil {
+// 		response.ContainsCharacter = *filters.ContainsCharacter
+// 	}
+
+// 	return response
+// }
+
+// // executeFilteredQuery runs the database query based on NLP filters
+// func (cfg *apiConfig) executeFilteredQuery(ctx context.Context, filters NLPFilters) ([]struct {
+// 	ID         string `json:"id"`
+// 	Value      string `json:"value"`
+// 	Properties struct {
+// 		Length                int32          `json:"length"`
+// 		IsPalindrome          string         `json:"is_palindrome"`
+// 		UniqueCharacters      string         `json:"unique_characters"`
+// 		WordCount             string         `json:"word_count"`
+// 		Sha256Hash            string         `json:"sha256_hash"`
+// 		CharacterFrequencyMap map[string]int `json:"character_frequency_map"`
+// 	} `json:"properties"`
+// 	CreatedAt time.Time `json:"created_at"`
+// }, error) {
+// 	// use the existing GetFilteredTexts method where possible
+// 	// and fall back to filtering all texts for more complex queries
+// 	// Convert NLP filters to the existing filter format where possible
+// 	filterParams := database.GetFilteredTextsParams{
+// 		IsPalindrome:      false, // default values
+// 		MinLength:         0,
+// 		MaxLength:         999999,
+// 		WordCount:         0,
+// 		ContainsCharacter: sql.NullString{Valid: false},
+// 	}
+
+// 	useExistingMethod := true
+
+// 	// Check if we can use the existing GetFilteredTexts method
+// 	if filters.IsPalindrome != nil {
+// 		filterParams.IsPalindrome = *filters.IsPalindrome
+// 	}
+
+// 	if filters.MinLength != nil {
+// 		filterParams.MinLength = int32(*filters.MinLength)
+// 	} else {
+// 		filterParams.MinLength = 0
+// 	}
+
+// 	if filters.MaxLength != nil {
+// 		filterParams.MaxLength = int32(*filters.MaxLength)
+// 	} else {
+// 		filterParams.MaxLength = 999999
+// 	}
+
+// 	if filters.WordCount != nil {
+// 		filterParams.WordCount = int32(*filters.WordCount)
+// 	} else {
+// 		filterParams.WordCount = 0
+// 		useExistingMethod = false // WordCount filtering not well supported in existing method
+// 	}
+
+// 	if filters.ContainsCharacter != nil {
+// 		filterParams.ContainsCharacter = sql.NullString{
+// 			String: *filters.ContainsCharacter,
+// 			Valid:  true,
+// 		}
+// 	}
+
+// 	// If ContainsText is specified, we can't use the existing method efficiently
+// 	if filters.ContainsText != nil {
+// 		useExistingMethod = false
+// 	}
+
+// 	if useExistingMethod && filters.WordCount == nil && filters.ContainsText == nil {
+// 		// Use the existing method for simple cases
+// 		dbTexts, err := cfg.DB.GetFilteredTexts(ctx, filterParams)
+// 		if err != nil {
+// 			return nil, err
+// 		}
+
+// 		var results []struct {
+// 			ID         string `json:"id"`
+// 			Value      string `json:"value"`
+// 			Properties struct {
+// 				Length                int32          `json:"length"`
+// 				IsPalindrome          string         `json:"is_palindrome"`
+// 				UniqueCharacters      string         `json:"unique_characters"`
+// 				WordCount             string         `json:"word_count"`
+// 				Sha256Hash            string         `json:"sha256_hash"`
+// 				CharacterFrequencyMap map[string]int `json:"character_frequency_map"`
+// 			} `json:"properties"`
+// 			CreatedAt time.Time `json:"created_at"`
+// 		}
+
+// 		for _, text := range dbTexts {
+// 			// Get character counts for each text to build frequency map
+// 			charCounts, err := cfg.DB.GetCharacterCountsByID(ctx, text.ID)
+// 			if err != nil {
+// 				fmt.Printf("error getting character counts for text %s: %v", text.ID.String(), err)
+// 				// Continue with empty character frequency map rather than failing completely
+// 				charCounts = []database.GetCharacterCountsByIDRow{}
+// 			}
+
+// 			// Create character frequency map
+// 			characterFrequencyMap := make(map[string]int)
+// 			for _, charCount := range charCounts {
+// 				characterFrequencyMap[charCount.Character] = int(charCount.UniqueCharCount)
+// 			}
+
+// 			results = append(results, struct {
+// 				ID         string `json:"id"`
+// 				Value      string `json:"value"`
+// 				Properties struct {
+// 					Length                int32          `json:"length"`
+// 					IsPalindrome          string         `json:"is_palindrome"`
+// 					UniqueCharacters      string         `json:"unique_characters"`
+// 					WordCount             string         `json:"word_count"`
+// 					Sha256Hash            string         `json:"sha256_hash"`
+// 					CharacterFrequencyMap map[string]int `json:"character_frequency_map"`
+// 				} `json:"properties"`
+// 				CreatedAt time.Time `json:"created_at"`
+// 			}{
+// 				ID:        text.ID.String(),
+// 				Value:     text.Value,
+// 				CreatedAt: text.CreatedAt,
+// 				Properties: struct {
+// 					Length                int32          `json:"length"`
+// 					IsPalindrome          string         `json:"is_palindrome"`
+// 					UniqueCharacters      string         `json:"unique_characters"`
+// 					WordCount             string         `json:"word_count"`
+// 					Sha256Hash            string         `json:"sha256_hash"`
+// 					CharacterFrequencyMap map[string]int `json:"character_frequency_map"`
+// 				}{
+// 					Length:                text.Length,
+// 					IsPalindrome:          fmt.Sprintf("%t", text.IsPalindrome),
+// 					UniqueCharacters:      fmt.Sprintf("%d", len(charCounts)),
+// 					WordCount:             fmt.Sprintf("%d", text.WordCount),
+// 					Sha256Hash:            text.Sha256Hash,
+// 					CharacterFrequencyMap: characterFrequencyMap,
+// 				},
+// 			})
+// 		}
+
+// 		return results, nil
+// 	}
+
+// 	// For complex queries with text contains or word count,
+// 	// we would need to add custom SQL queries to the sqlc schema.
+// 	// For now, return a message suggesting this enhancement
+// 	return nil, fmt.Errorf("complex filtering with text search or exact word count requires additional SQL queries. Consider adding custom queries to your sqlc schema")
+// }

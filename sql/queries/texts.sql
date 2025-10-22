@@ -54,7 +54,7 @@ WHERE
 ORDER BY t.created_at DESC;
 
 
--- name: DeleteText :exec
+-- name: DeleteTextWithValue :exec
 DELETE FROM texts
 WHERE value = $1;
 

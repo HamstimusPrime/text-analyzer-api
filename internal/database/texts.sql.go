@@ -68,16 +68,6 @@ func (q *Queries) CreateText(ctx context.Context, arg CreateTextParams) (uuid.UU
 	return id, err
 }
 
-const deleteText = `-- name: DeleteText :exec
-DELETE FROM texts
-WHERE value = $1
-`
-
-func (q *Queries) DeleteText(ctx context.Context, value string) error {
-	_, err := q.db.ExecContext(ctx, deleteText, value)
-	return err
-}
-
 const deleteTextWithID = `-- name: DeleteTextWithID :exec
 DELETE FROM texts
 WHERE id = $1
@@ -85,6 +75,16 @@ WHERE id = $1
 
 func (q *Queries) DeleteTextWithID(ctx context.Context, id uuid.UUID) error {
 	_, err := q.db.ExecContext(ctx, deleteTextWithID, id)
+	return err
+}
+
+const deleteTextWithValue = `-- name: DeleteTextWithValue :exec
+DELETE FROM texts
+WHERE value = $1
+`
+
+func (q *Queries) DeleteTextWithValue(ctx context.Context, value string) error {
+	_, err := q.db.ExecContext(ctx, deleteTextWithValue, value)
 	return err
 }
 
