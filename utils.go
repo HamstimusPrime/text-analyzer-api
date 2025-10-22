@@ -70,24 +70,31 @@ func validateString(reqBody RequestBody, cfg *apiConfig) (int, string, error) {
 	text, err := cfg.DB.GetText(context.Background(), reqBody.Value)
 	if err != nil {
 		// If it's a "not found" error(string doesn't exist) Only return an error if it's a real database error
-		if !errors.Is(err, sql.ErrNoRows) {
-			errMsg := fmt.Sprintf("Failed to validate text\n")
-			fmt.Printf("error: %v", err)
+		if errors.Is(err, sql.ErrNoRows) {
+			fmt.Printf("String Not in DB, err: %v\n", err)
+			text.Value = ""
+
+		} else {
+			fmt.Println("Text NOT created!!")
+			errMsg := fmt.Sprintf("unable to create string. Internal server Error\n")
 			return 500, errMsg, err
 		}
+
 	}
 
-	if text != "" {
-		errMsg := fmt.Sprintf("String already exists in the system")
+	if text.Value != "" {
+		errMsg := fmt.Sprintf("String already exists in the DB")
 		return 409, errMsg, errors.New("String in DB")
 	}
+
+	fmt.Println("Text created!!")
 	return 0, "", nil
 }
 
 func generateHash(str string) string {
 	h := sha256.New()
 	h.Write([]byte(str))
-	return string(h.Sum(nil))
+	return fmt.Sprintf("%x", h.Sum(nil))
 }
 
 func charCount(str string) int32 {
@@ -105,7 +112,6 @@ func wordCount(str string) int32 {
 	return int32(len(words))
 }
 
-// unique character count
 func countUniqueChars(s string) map[rune]int32 {
 	counts := make(map[rune]int32)
 

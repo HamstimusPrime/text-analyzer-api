@@ -32,8 +32,7 @@ func main() {
 		DB: dbQueries,
 	}
 
-	//setup a server
-
+	//server setup
 	port := os.Getenv("PORT")
 	mux := http.NewServeMux()
 	mux.HandleFunc("POST /strings", apiConfiguration.CreateText)

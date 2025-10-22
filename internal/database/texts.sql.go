@@ -12,7 +12,7 @@ import (
 )
 
 const createCharCount = `-- name: CreateCharCount :exec
-INSERT INTO character_count (id, string_id, character, char_count)
+INSERT INTO character_count (id, string_id, character, unique_char_count)
 VALUES (
     gen_random_uuid(),
     $1,
@@ -22,13 +22,13 @@ VALUES (
 `
 
 type CreateCharCountParams struct {
-	StringID  uuid.UUID
-	Character string
-	CharCount int32
+	StringID        uuid.UUID
+	Character       string
+	UniqueCharCount int32
 }
 
 func (q *Queries) CreateCharCount(ctx context.Context, arg CreateCharCountParams) error {
-	_, err := q.db.ExecContext(ctx, createCharCount, arg.StringID, arg.Character, arg.CharCount)
+	_, err := q.db.ExecContext(ctx, createCharCount, arg.StringID, arg.Character, arg.UniqueCharCount)
 	return err
 }
 
@@ -77,13 +77,77 @@ func (q *Queries) DeleteText(ctx context.Context, id uuid.UUID) error {
 	return err
 }
 
+const getCharacterCountsByID = `-- name: GetCharacterCountsByID :many
+SELECT character, unique_char_count
+FROM texts
+JOIN character_count ON $1 = character_count.string_id
+ORDER BY character
+`
+
+type GetCharacterCountsByIDRow struct {
+	Character       string
+	UniqueCharCount int32
+}
+
+func (q *Queries) GetCharacterCountsByID(ctx context.Context, stringID uuid.UUID) ([]GetCharacterCountsByIDRow, error) {
+	rows, err := q.db.QueryContext(ctx, getCharacterCountsByID, stringID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetCharacterCountsByIDRow
+	for rows.Next() {
+		var i GetCharacterCountsByIDRow
+		if err := rows.Scan(&i.Character, &i.UniqueCharCount); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getText = `-- name: GetText :one
-SELECT value 
+SELECT id, value, length, is_palindrome, word_count, sha256_hash, created_at 
 FROM texts WHERE value = $1
 `
 
-func (q *Queries) GetText(ctx context.Context, value string) (string, error) {
+func (q *Queries) GetText(ctx context.Context, value string) (Text, error) {
 	row := q.db.QueryRowContext(ctx, getText, value)
-	err := row.Scan(&value)
-	return value, err
+	var i Text
+	err := row.Scan(
+		&i.ID,
+		&i.Value,
+		&i.Length,
+		&i.IsPalindrome,
+		&i.WordCount,
+		&i.Sha256Hash,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
+const getTextByID = `-- name: GetTextByID :one
+SELECT id, value, length, is_palindrome, word_count, sha256_hash, created_at 
+FROM texts WHERE id = $1
+`
+
+func (q *Queries) GetTextByID(ctx context.Context, id uuid.UUID) (Text, error) {
+	row := q.db.QueryRowContext(ctx, getTextByID, id)
+	var i Text
+	err := row.Scan(
+		&i.ID,
+		&i.Value,
+		&i.Length,
+		&i.IsPalindrome,
+		&i.WordCount,
+		&i.Sha256Hash,
+		&i.CreatedAt,
+	)
+	return i, err
 }

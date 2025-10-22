@@ -11,10 +11,10 @@ import (
 )
 
 type CharacterCount struct {
-	ID        uuid.UUID
-	StringID  uuid.UUID
-	Character string
-	CharCount int32
+	ID              uuid.UUID
+	StringID        uuid.UUID
+	Character       string
+	UniqueCharCount int32
 }
 
 type Text struct {
