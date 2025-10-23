@@ -28,6 +28,11 @@ FROM texts WHERE value = $1;
 SELECT id, value, length, is_palindrome, word_count, sha256_hash, created_at 
 FROM texts WHERE id = $1;
 
+-- name: GetAllTexts :many
+SELECT id, value, length, is_palindrome, word_count, sha256_hash, created_at 
+FROM texts 
+ORDER BY created_at DESC;
+
 -- name: GetCharacterCountsByID :many
 SELECT character, unique_char_count
 FROM texts

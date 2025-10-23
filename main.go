@@ -47,7 +47,7 @@ func main() {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /strings/{string_value}", apiConfiguration.GetText)
 	mux.HandleFunc("GET /strings", apiConfiguration.GetFilteredTexts)
-	// mux.HandleFunc("POST /strings/filter-by-natural-language", apiConfiguration.GetTexByNaturalLang)
+	mux.HandleFunc("GET /strings/filter-by-natural-language", apiConfiguration.GetTexByNaturalLang)
 	mux.HandleFunc("POST /strings", apiConfiguration.CreateText)
 	mux.HandleFunc("DELETE /strings/{string_value}", apiConfiguration.DeleteText)
 

@@ -122,19 +122,3 @@ func getUniqueChars(s string) map[rune]int32 {
 
 	return uniqueCharMap
 }
-
-func countUniqueChars(s string) int32 {
-	characters := make(map[rune]int32)
-
-	for _, char := range s {
-		characters[char]++
-	}
-
-	return int32(len(characters))
-}
-
-// func validateQueryParams(r *http.Request) {
-// 	//returns a map where keys are made up of filte
-// 	// Parse query parameters
-// 	queryParams := r.URL.Query()
-// }

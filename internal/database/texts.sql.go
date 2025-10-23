@@ -88,6 +88,43 @@ func (q *Queries) DeleteTextWithValue(ctx context.Context, value string) error {
 	return err
 }
 
+const getAllTexts = `-- name: GetAllTexts :many
+SELECT id, value, length, is_palindrome, word_count, sha256_hash, created_at 
+FROM texts 
+ORDER BY created_at DESC
+`
+
+func (q *Queries) GetAllTexts(ctx context.Context) ([]Text, error) {
+	rows, err := q.db.QueryContext(ctx, getAllTexts)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Text
+	for rows.Next() {
+		var i Text
+		if err := rows.Scan(
+			&i.ID,
+			&i.Value,
+			&i.Length,
+			&i.IsPalindrome,
+			&i.WordCount,
+			&i.Sha256Hash,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getCharacterCountsByID = `-- name: GetCharacterCountsByID :many
 SELECT character, unique_char_count
 FROM texts
